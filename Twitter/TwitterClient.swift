@@ -46,6 +46,45 @@ class TwitterClient: BDBOAuth1SessionManager {
         
         NSNotificationCenter.defaultCenter().postNotificationName(User.userDidLogoutNotification, object: nil)
     }
+    func userTimeline(screenname: String, completion: (tweet: [Tweet]?, error: NSError?)-> ()) {
+        GET("1.1/statuses/user_timeline.json?screen_name=\(screenname)", parameters: nil,
+            success: { (operation: NSURLSessionDataTask?, response: AnyObject?) -> Void in
+                var tweets = Tweet.tweetsWithArray(response as! [NSDictionary])
+                
+                completion(tweet: tweets, error: nil)
+            },
+            
+            failure: { (operation: NSURLSessionDataTask?, error: NSError!) -> Void in
+                print("Error retrieving info: \(error)")
+                
+                completion(tweet: nil, error: error)
+               
+        })
+        
+    }
+
+    func tweet(tweetText: String) {
+        let tweetText = (tweetText.stringByAddingPercentEscapesUsingEncoding(NSUTF8StringEncoding))!
+        POST("1.1/statuses/update.json?status=\(tweetText)", parameters: nil,
+            success: { (operation: NSURLSessionDataTask, response: AnyObject?) -> Void in
+                print("Tweeted")
+            }, failure: { (operation: NSURLSessionDataTask?, error: NSError) -> Void in
+                print("Tweet error:\(error)")
+        })
+        
+    }
+    
+    func reply(tweetId: String, tweetText: String) {
+        let escapedText = (tweetText.stringByAddingPercentEscapesUsingEncoding(NSUTF8StringEncoding))!
+        print("1.1/statuses/update.json?status=\(escapedText)&in_reply_to_status_id=\(tweetId)")
+        POST("1.1/statuses/update.json?status=\(escapedText)&in_reply_to_status_id=\(tweetId)", parameters: nil,
+            success: { (operation: NSURLSessionDataTask, response: AnyObject?) -> Void in
+                print("replied")
+            }, failure: { (operation: NSURLSessionDataTask?, error: NSError) -> Void in
+                print("Reply error:\(error)")
+        })
+        
+    }
     
     func homeTimeline(succes: ([Tweet]) -> (), failure: (NSError)-> ()){
         
@@ -71,9 +110,10 @@ class TwitterClient: BDBOAuth1SessionManager {
         GET("1.1/account/verify_credentials.json", parameters: nil, success: { (task: NSURLSessionDataTask!, response: AnyObject?) -> Void in
             let userDictionary = response as! NSDictionary
             let user = User(dictionary: userDictionary)
-            
             succes(user)
             
+        
+        
             }, failure: { (operation: NSURLSessionDataTask?, error: NSError) -> Void in
                 print("error: \(error.localizedDescription)")
         })

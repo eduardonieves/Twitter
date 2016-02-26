@@ -14,7 +14,9 @@ class TweetDetailViewController: UIViewController {
 
     
     var tweets: Tweet!
+    var tweet: [Tweet]!
     
+
     @IBOutlet weak var tweetTextLabel: UILabel!
     @IBOutlet weak var timeStamp: UILabel!
     @IBOutlet weak var nameLabel: UILabel!
@@ -28,6 +30,9 @@ class TweetDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        let logoImage =  UIImage(named: "Twitter_logo_white_30px.png")
+        let logoView = UIImageView(image:logoImage)
+        self.navigationItem.titleView = logoView
         tweetTextLabel.text = tweets.text
         let profileImage = tweets.user?.profileUrl
         imageView.setImageWithURL(profileImage!)
@@ -40,12 +45,14 @@ class TweetDetailViewController: UIViewController {
             }
         }
         else if fvCounter == 1{
-            favoriteCountLabel.text = String(tweets.favoritesCount+1)
+            tweets.favoritesCount = tweets.favoritesCount + 1
+            favoriteCountLabel.text = String(tweets.favoritesCount)
              favoriteCountLabel.hidden = false
         }
         
         else if fvCounter == 2{
-            favoriteCountLabel.text = String(tweets.favoritesCount-1)
+            tweets.favoritesCount = tweets.favoritesCount - 1
+            favoriteCountLabel.text = String(tweets.favoritesCount)
              favoriteCountLabel.hidden = false
             if tweets.favoritesCount == 0{
                 favoriteCountLabel.hidden = true
@@ -62,41 +69,45 @@ class TweetDetailViewController: UIViewController {
         }
     
         else if rtCounter == 1{
-        retweetCountLabel.text = String(tweets.retweetCount+1)
+            tweets.retweetCount = tweets.retweetCount + 1
+        retweetCountLabel.text = String(tweets.retweetCount)
              retweetCountLabel.hidden = false
         }
        else if rtCounter == 2{
-            retweetCountLabel.text = String(tweets.retweetCount-1)
-             retweetCountLabel.hidden = false
+            tweets.retweetCount = tweets.retweetCount - 1
+            retweetCountLabel.text = String(tweets.retweetCount)
+            retweetCountLabel.hidden = false
             if tweets.retweetCount == 0{
                 retweetCountLabel.hidden = true
             }
         }
-
+        
         nameLabel.text = tweets.user?.name
         timeStamp.text = String(tweets!.timeStamp!)
         
-    
+        
     }
-
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
     
     @IBAction func retweetButton(sender: AnyObject) {
-         rtCounter++
+        rtCounter++
         if rtCounter == 1 {
-            retweetCountLabel.text = String(tweets.retweetCount+1)
+            tweets.retweetCount = tweets.retweetCount + 1
+            retweetCountLabel.text = String(tweets.retweetCount)
             viewDidLoad()
         } else if rtCounter == 2{
             rtCounter = 0
-            retweetCountLabel.text = String(tweets.retweetCount-1)
+            tweets.retweetCount = tweets.retweetCount - 1
+            retweetCountLabel.text = String(tweets.retweetCount)
             viewDidLoad()
         }
-
+        
     }
-
+    
     @IBOutlet weak var fvButton: UIButton!
     @IBAction func favoriteButton(sender: AnyObject) {
         fvCounter++
@@ -106,7 +117,7 @@ class TweetDetailViewController: UIViewController {
             fvButton.setImage(tintedImage, forState: .Normal)
             fvButton.tintColor = UIColor.yellowColor()
             viewDidLoad()
-    }
+        }
         else if fvCounter == 2{
             fvCounter = 0
             let fvImage = UIImage(named: "favorite.png")
@@ -116,14 +127,23 @@ class TweetDetailViewController: UIViewController {
             viewDidLoad()
         }
     }
- 
-    /*
-    // MARK: - Navigation
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
+    
+    
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+        
+        if segue.identifier == "ProfileSegue"{
+            
+            
+            let profileController = segue.destinationViewController as! ProfileViewController
+            
+            
+            profileController.tweet2 = tweets
+            profileController.name = tweets.user!.name!
+            profileController.screenName = (tweets.user?.screenName)!
+            
+            
+            
+        }
     }
-    */
-
+    
 }

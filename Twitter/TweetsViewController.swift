@@ -13,22 +13,29 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
     var tweets: [Tweet]!
     var fvCounter = 0
     var rtCounter = 0
+    var tweetsCount: Int!
+    var tweeted = false
     
     @IBOutlet weak var tableView: UITableView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+         NSNotificationCenter.defaultCenter().addObserver(self, selector: "loadList:",name:"load", object: nil)
         
         
         self.tableView.delegate = self
         self.tableView.dataSource = self
+        let logoImage =  UIImage(named: "Twitter_logo_white_30px.png")
+        let logoView = UIImageView(image:logoImage)
+        self.navigationItem.titleView = logoView
+       // self.navigationItem.rightBarButtonItem =
         //self.tableView.rowHeight = UITableViewAutomaticDimension
         //self.tableView.estimatedRowHeight = 120
         
         TwitterClient.sharedInstance.homeTimeline({ (tweets: [Tweet]) -> () in
             self.tweets = tweets
             self.tableView.reloadData()
-            
+            self.navigationItem.titleView = logoView
             
             for tweet in tweets{
                 print(tweet.text)
@@ -44,7 +51,9 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
     }
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tweets != nil {
+              print("Tweets Count: \(tweets!.count)")
             return tweets!.count
+          
         } else {
             return 0
         }
@@ -173,18 +182,40 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
         }
     }
   
-    
+    func loadList(notification: NSNotification){
+        //load data here
+        viewDidLoad()
+        self.tableView.reloadData()
+    }
        override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
        
+            if segue.identifier == "ComposeSegue"{
+                tweeted = true
+        }
        
+            if segue.identifier == "ProfileSegue"{
+                
+                let button = sender as! UIButton
+                let buttonFrame = button.convertRect(button.bounds, toView: self.tableView)
+                if let indexPath = self.tableView.indexPathForRowAtPoint(buttonFrame.origin) {
+                    let profileController = segue.destinationViewController as! ProfileViewController
+                    
+                    let selectedRow = indexPath.row as NSInteger
+                    
+                    profileController.tweets = tweets
+                    profileController.index = selectedRow
+                }
+
+
+            }
+            else if segue.identifier == "TweetDetailSegue"{
+            
             let cell = sender as! UITableViewCell
             let indexPath = tableView.indexPathForCell(cell)
             let tweet = self.tweets![indexPath!.row]
-            
             let tweetDetailViewController = segue.destinationViewController as! TweetDetailViewController
-           
             tweetDetailViewController.tweets = tweet
-            
+        }
 
     }
 
