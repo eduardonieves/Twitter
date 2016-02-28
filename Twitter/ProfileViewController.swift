@@ -26,12 +26,22 @@ class ProfileViewController: UIViewController,UITableViewDataSource,UITableViewD
     var index: Int?
     var screenName: String = ""
     var name: String!
+    var tweetId: String!
+    var replyHandle: String!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         self.tableView.delegate = self
         self.tableView.dataSource = self
+        self.tableView.rowHeight = UITableViewAutomaticDimension
+        self.tableView.estimatedRowHeight = 150
+        
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "loadList:",name:"load", object: nil)
+        let logoImage =  UIImage(named: "Twitter_logo_white_30px.png")
+        let logoView = UIImageView(image:logoImage)
+        self.navigationItem.titleView = logoView
+
 
         
         
@@ -40,6 +50,7 @@ class ProfileViewController: UIViewController,UITableViewDataSource,UITableViewD
         
         if let tweet = tweets?[index!] {
         
+        tweetId = tweet.tweetId as String!
         tweetCountLabel.text = String(tweet.user!.tweetCount!)
         followersCountLabel.text = String(tweet.user!.followersCount!)
         followingCountLabel.text = String(tweet.user!.followingCount!)
@@ -63,7 +74,7 @@ class ProfileViewController: UIViewController,UITableViewDataSource,UITableViewD
         }
         else{
             profileNameLabel.text = name
-            screenNameLabel.text = screenName
+            screenNameLabel.text = ("@\(screenName)")
             
             tweetCountLabel.text = String(tweet2.user!.tweetCount!)
             followersCountLabel.text = String(tweet2.user!.followersCount!)
@@ -101,16 +112,18 @@ class ProfileViewController: UIViewController,UITableViewDataSource,UITableViewD
         }
     }
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("ProfileCell", forIndexPath: indexPath) as! ProfileViewCell
+        let cell = tableView.dequeueReusableCellWithIdentifier("TweetCell", forIndexPath: indexPath) as! TweetCell
     
-        let tweet = tweets![indexPath.row]
+        cell.tweet = tweets![indexPath.row]
+        
 
-        cell.profileNameLabel.text = tweet.user?.name
+       /* cell.profileNameLabel.text = tweet.user?.name
         cell.screenNameLabel.text = "@\(tweet.user!.screenName!)"
         let profileImage = tweet.user?.profileUrl
         cell.profileImageView.setImageWithURL(profileImage!)
         cell.tweetTextLabel.text = tweet.text
-      
+*/
+        tweetId = cell.tweet.tweetId
 
     
     return cell
@@ -133,20 +146,50 @@ class ProfileViewController: UIViewController,UITableViewDataSource,UITableViewD
         dismissViewControllerAnimated(true, completion: nil)
 
     }
+    
+    func loadList(notification: NSNotification){
+        //load data here
+        viewDidLoad()
+        self.tableView.reloadData()
+    }
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
     
 
-    /*
+    
     // MARK: - Navigation
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+        
+        if segue.identifier == "ReplySegue"{
+            let composeNavigationController = segue.destinationViewController as! UINavigationController
+            let composeViewController = composeNavigationController.viewControllers.first as! ComposeViewController
+            
+             replyHandle  = "@\((screenName)) "
+            composeViewController.screenName = screenName
+         composeViewController.isReply = true
+            composeViewController.tweetId = tweetId!
+            composeViewController.replyTo = replyHandle
+        }
+        else if segue.identifier == "ComposeSegue"{
+            let composeNavigationController = segue.destinationViewController as! UINavigationController
+            let composeViewController = composeNavigationController.viewControllers.first as! ComposeViewController
+            composeViewController.isReply = false
+        }
+        else if segue.identifier == "TweetDetailSegue"{
+            
+            let cell = sender as! UITableViewCell
+            let indexPath = tableView.indexPathForCell(cell)
+            let tweet = self.tweets![indexPath!.row]
+            let tweetDetailViewController = segue.destinationViewController as! TweetDetailViewController
+            // print("favorites: \(tweet.favoritesCount)")
+            tweetDetailViewController.tweets = tweet
+        }
+
     }
-    */
+
 
 }

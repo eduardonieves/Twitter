@@ -8,15 +8,21 @@
 
 import UIKit
 
-class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDelegate {
 
+class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDelegate,UIScrollViewDelegate {
+
+    
+    @IBOutlet weak var tableView: UITableView!
+    
     var tweets: [Tweet]!
     var fvCounter = 0
     var rtCounter = 0
     var tweetsCount: Int!
     var tweeted = false
+    var isMoreDataLoading = false
+    var loadingMoreView:InfiniteScrollActivityView?
+    var loadingCount = 20
     
-    @IBOutlet weak var tableView: UITableView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,12 +31,26 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
         
         self.tableView.delegate = self
         self.tableView.dataSource = self
+        self.tableView.rowHeight = UITableViewAutomaticDimension
+        self.tableView.estimatedRowHeight = 150
+        
         let logoImage =  UIImage(named: "Twitter_logo_white_30px.png")
         let logoView = UIImageView(image:logoImage)
         self.navigationItem.titleView = logoView
-       // self.navigationItem.rightBarButtonItem =
-        //self.tableView.rowHeight = UITableViewAutomaticDimension
-        //self.tableView.estimatedRowHeight = 120
+        
+        let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
+        loadingMoreView = InfiniteScrollActivityView(frame: frame)
+        loadingMoreView!.hidden = true
+        tableView.addSubview(loadingMoreView!)
+        
+        var insets = tableView.contentInset;
+        insets.bottom += InfiniteScrollActivityView.defaultHeight;
+        tableView.contentInset = insets
+        
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: "refreshControlAction:", forControlEvents: UIControlEvents.ValueChanged)
+        tableView.insertSubview(refreshControl, atIndex: 0)
+     
         
         TwitterClient.sharedInstance.homeTimeline({ (tweets: [Tweet]) -> () in
             self.tweets = tweets
@@ -45,9 +65,10 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
                 print("error: \(error.localizedDescription)")
         }
       
-       // print("HERE: \(name)")
-        
-        // Do any additional setup after loading the view.
+        let refreshControl2 = UIRefreshControl()
+        refreshControl2.addTarget(self, action: "refreshControlAction:", forControlEvents: UIControlEvents.ValueChanged)
+        tableView.insertSubview(refreshControl2, atIndex: 0)
+    
     }
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         if tweets != nil {
@@ -62,75 +83,13 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("TweetCell", forIndexPath: indexPath) as! TweetCell
         
-        let tweet = tweets![indexPath.row]
-        let retweetCount = String(tweet.retweetCount)
-        if rtCounter == 0{
-            
-            cell.retweetCountLabel.text = retweetCount
-            
-            if tweet.retweetCount == 0{
-            cell.retweetCountLabel.hidden = true
-            }
-        }
-        else if rtCounter == 1{
-            
-             let retweetCount = String(tweet.retweetCount+1)
-             cell.retweetCountLabel.text = retweetCount
-             cell.retweetCountLabel.hidden = false
-        }
-        else if rtCounter == 2 {
-            
-            let retweetCount = String(tweet.retweetCount-1)
-            cell.retweetCountLabel.text = retweetCount
-            cell.retweetCountLabel.hidden = false
-            if tweet.retweetCount == 0{
-                cell.retweetCountLabel.hidden = true
-            }
-        }
+        cell.tweet = tweets![indexPath.row]
         
-        let favoriteCount = String(tweet.favoritesCount)
-        if fvCounter == 0{
-            
-            cell.favoriteCountLabel.text = favoriteCount
-            cell.favoriteCountLabel.hidden = true
-            if tweet.favoritesCount == 0{
-                cell.favoriteCountLabel.hidden = true
-            }
-        }
-        else if fvCounter == 1{
-            
-            let favoriteCount = String(tweet.favoritesCount+1)
-            cell.favoriteCountLabel.text = favoriteCount
-            cell.favoriteCountLabel.hidden = false
-        }
-        else if rtCounter == 2 {
-            
-            let favoriteCount = String(tweet.favoritesCount-1)
-            cell.favoriteCountLabel.text = favoriteCount
-            cell.favoriteCountLabel.hidden = false
-            if tweet.favoritesCount == 0{
-                cell.favoriteCountLabel.hidden = true
-            }
-        }
-        
-        
-        
-        
-        
-        cell.screenNameLabel.text = tweet.user?.name
-        cell.timeStampLabel.text = String(tweet.timeStamp!)
-        cell.tweetTextLabel.text = tweet.text
-        let profileImage = tweet.user?.profileUrl
-        let profileView = profileImage
-        cell.profileImageView.layer.cornerRadius = 10.0
-        cell.profileImageView.setImageWithURL(profileView!)
-       
-        
-        
+        cell.tweetTextLabel.sizeToFit()
         
         return cell
     }
-
+ 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -150,47 +109,60 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
         
     }
     
-
-   
-
-    
-       @IBAction func favoriteButton(sender: AnyObject) {
-        fvCounter++
-        
-        func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-            let cell = tableView.dequeueReusableCellWithIdentifier("TweetCell", forIndexPath: indexPath) as! TweetCell
-
-
-        if fvCounter == 1{
-            let fvImage = UIImage(named: "favorite.png")
-            let tintedImage = fvImage!.imageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate)
-            
-            
-            cell.fvButton.setImage(tintedImage, forState: .Normal)
-            cell.fvButton.tintColor = UIColor.yellowColor()
-            viewDidLoad()
-        }
-        else if fvCounter == 2{
-            fvCounter = 0
-            let fvImage = UIImage(named: "favorite.png")
-            let tintedImage = fvImage!.imageWithRenderingMode(UIImageRenderingMode.AlwaysTemplate)
-            cell.fvButton.setImage(tintedImage, forState: .Normal)
-            cell.fvButton.tintColor = UIColor.blackColor()
-            viewDidLoad()
-        }
-            return cell
-        }
-    }
-  
     func loadList(notification: NSNotification){
         //load data here
         viewDidLoad()
         self.tableView.reloadData()
     }
+    
+    func loadMoreData() {
+        
+        loadingCount += 20
+        let param = ["count": loadingCount]
+        TwitterClient.sharedInstance.homeTimelineWithParams(param) { (tweets, error) -> () in
+            if tweets != nil {
+                self.tweets = tweets!
+                self.isMoreDataLoading = false
+                
+                self.tableView.reloadData()
+            }
+        }
+    }
+    func scrollViewDidScroll(scrollView: UIScrollView) {
+        if (!isMoreDataLoading) {
+            
+            let scrollViewContentHeight = tableView.contentSize.height
+            let scrollOffsetThreshold = scrollViewContentHeight - tableView.bounds.size.height
+            
+            
+            if(scrollView.contentOffset.y > scrollOffsetThreshold && tableView.dragging) {
+                isMoreDataLoading = true
+                
+                let frame = CGRectMake(0, tableView.contentSize.height, tableView.bounds.size.width, InfiniteScrollActivityView.defaultHeight)
+                loadingMoreView?.frame = frame
+                loadingMoreView!.startAnimating()
+                
+                loadMoreData()
+            }
+        }
+    }
+    func refreshControlAction(refreshControl: UIRefreshControl) {
+        loadingCount = 20
+        
+        TwitterClient.sharedInstance.homeTimelineWithParams(nil) { (tweets, error) -> () in
+            if tweets != nil {
+                self.tweets = tweets!
+                self.tableView.reloadData()
+                refreshControl.endRefreshing()
+            }
+        }
+    }
        override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
        
             if segue.identifier == "ComposeSegue"{
-                tweeted = true
+                let composeNavigationController = segue.destinationViewController as! UINavigationController
+                let composeViewController = composeNavigationController.viewControllers.first as! ComposeViewController
+                composeViewController.isReply = false
         }
        
             if segue.identifier == "ProfileSegue"{
@@ -198,7 +170,8 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
                 let button = sender as! UIButton
                 let buttonFrame = button.convertRect(button.bounds, toView: self.tableView)
                 if let indexPath = self.tableView.indexPathForRowAtPoint(buttonFrame.origin) {
-                    let profileController = segue.destinationViewController as! ProfileViewController
+                    let profileNavigationController = segue.destinationViewController as! UINavigationController
+                    let profileController = profileNavigationController.viewControllers.first as! ProfileViewController
                     
                     let selectedRow = indexPath.row as NSInteger
                     
@@ -214,8 +187,24 @@ class TweetsViewController: UIViewController,UITableViewDataSource,UITableViewDe
             let indexPath = tableView.indexPathForCell(cell)
             let tweet = self.tweets![indexPath!.row]
             let tweetDetailViewController = segue.destinationViewController as! TweetDetailViewController
+               // print("favorites: \(tweet.favoritesCount)")
             tweetDetailViewController.tweets = tweet
         }
+            else if segue.identifier == "ReplySegue"{
+                let button = sender as! UIButton
+                let buttonFrame = button.convertRect(button.bounds, toView: self.tableView)
+                if let indexPath = self.tableView.indexPathForRowAtPoint(buttonFrame.origin){                let tweet = self.tweets![indexPath.row]
+                let composeNavigationController = segue.destinationViewController as! UINavigationController
+                let composeViewController = composeNavigationController.viewControllers.first as! ComposeViewController
+                
+              let replyHandle  = "@\((tweet.user!.screenName!) ) "
+                composeViewController.screenName = (tweet.user!.screenName)!
+                composeViewController.isReply = true
+                composeViewController.tweetId = tweet.tweetId!
+                composeViewController.replyTo = replyHandle
+                }
+        }
+
 
     }
 

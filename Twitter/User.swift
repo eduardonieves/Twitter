@@ -17,12 +17,14 @@ class User: NSObject {
     var tweetCount: Int?
     var followingCount: Int?
     var followersCount: Int?
+    var medias: [NSURL]?
     var location: String?
     var dictionary: NSDictionary
     
     init(dictionary: NSDictionary) {
         self.dictionary = dictionary
         
+        tagline = dictionary["description"] as? String
         name = dictionary["name"] as? String
         screenName = dictionary["screen_name"] as? String
         tweetCount = dictionary["statuses_count"] as? Int
@@ -43,6 +45,14 @@ class User: NSObject {
         tagline = dictionary["description"] as? String
     }
     
+    class func usersWithArray(array: [NSDictionary]) -> [User] {
+        var users = [User]()
+        
+        for dictionary in array {
+            users.append(User(dictionary: dictionary))
+        }
+        return users
+    }
     static let userDidLogoutNotification = "UserDidLogout"
     
     static var _currentUser: User?

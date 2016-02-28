@@ -22,7 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if User.currentUser != nil{
             print("There is a current user")
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
-          let  vc = storyboard.instantiateViewControllerWithIdentifier("TweetsNavigationController")
+          let  vc = storyboard.instantiateViewControllerWithIdentifier("TabBarController")
             window?.rootViewController = vc
             
         }

@@ -15,21 +15,38 @@ class ComposeViewController: UIViewController,UITextViewDelegate {
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var profileImageView: UIImageView!
     @IBOutlet weak var charCountButton: UIBarButtonItem!
+    @IBOutlet weak var replyToLabel: UILabel!
     
     var tweets: [Tweet]!
     var name: String!
     var screenName = ""
+    var tweetId: String = ""
+    var replyTo: String = ""
     var charCount: String!
+    var isReply: Bool!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         tweetView.delegate = self
+        let logoImage =  UIImage(named: "Twitter_logo_white_30px.png")
+        let logoView = UIImageView(image:logoImage)
+        self.navigationItem.titleView = logoView
+        
+        print(tweetId)
         
         nameLabel.text = User.currentUser?.name
         screenNameLabel.text = ("@\(User.currentUser!.screenName!)")
         let imageUrl = (User.currentUser?.profileUrl)!
         profileImageView.setImageWithURL(imageUrl)
+        tweetView.text = replyTo
+        
+        if isReply == false {
+            replyToLabel.hidden = true
+        } else if isReply == true {
+            replyToLabel.hidden = false
+            replyToLabel.text = "In reply to @\(screenName)"
+        }
          tweetView.becomeFirstResponder()
         
     }
@@ -45,12 +62,19 @@ class ComposeViewController: UIViewController,UITextViewDelegate {
 
     @IBAction func submitTweet(sender: AnyObject) {
         let count = tweetView.text.characters.count
-
-        if count <= 140 {
-            print("Tweeted")
-         TwitterClient.sharedInstance.tweet(tweetView.text)
-         NSNotificationCenter.defaultCenter().postNotificationName("load", object: nil)
-         dismissViewControllerAnimated(true, completion: nil)
+        
+        if count <= 140{
+            if isReply == false {
+                print("Tweeted")
+                TwitterClient.sharedInstance.tweet("\(tweetView.text)")
+                NSNotificationCenter.defaultCenter().postNotificationName("load", object: nil)
+                dismissViewControllerAnimated(true, completion: nil)
+            }else if isReply == true {
+                print("Replyed")
+                TwitterClient.sharedInstance.reply(tweetId, tweetText: tweetView.text)
+                NSNotificationCenter.defaultCenter().postNotificationName("load", object: nil)
+               dismissViewControllerAnimated(true, completion: nil)
+        }
         }
     }
     @IBAction func onCancel(sender: AnyObject) {
